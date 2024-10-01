@@ -17,6 +17,8 @@ namespace HTTPBasicClient
     /// </summary>
     public partial class MainWindow : Window
     {
+        HttpClient _client = new();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -24,7 +26,51 @@ namespace HTTPBasicClient
 
         private void ClickConsultButton(object sender, RoutedEventArgs e)
         {
+            string url = urlTextBox.Text;
 
+            if (string.IsNullOrEmpty(url))
+                MessageBox.Show("Error", "Debes ingresar el URL a consultar");
+            else
+            {
+                SendRequest(url);
+            }
+        }
+
+        private void SendRequest(string url)
+        {
+            HttpResponseMessage response = new();
+
+            try
+            {
+                switch (methodComboBox.Text)
+                {
+                    case "GET":
+                        response = _client.GetAsync(url).Result;
+                        break;
+                    case "HEAD":
+                        response = _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).Result;
+                        break;
+                    case "OPTIONS":
+                        response = _client.SendAsync(new HttpRequestMessage(HttpMethod.Options, url)).Result;
+                        break;
+                }
+
+                if (response != null)
+                {
+                    statusCodeLabel.Content = $"Respuesta HTTP: {(int)response.StatusCode} - {response.StatusCode}";
+                    mimeTypeLabel.Content = response.Content.Headers.ContentType != null ? 
+                        $"Tipo de contenido: {response.Content.Headers.ContentType.MediaType}" : "Tipo de contenido: Desconocido";
+
+                    string responseBody = response.Content.ReadAsStringAsync().Result;
+                    string responseHeaders = response.Headers.ToString();
+
+                    responseBodyTextBox.Text = responseBody;
+                    responseHeadersTextBox.Text = responseHeaders;
+                }
+            }
+            catch (Exception)
+            {
+            }
         }
 
         private void ClickSaveButton(object sender, RoutedEventArgs e)
