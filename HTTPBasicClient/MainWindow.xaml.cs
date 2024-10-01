@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -19,6 +20,16 @@ namespace HTTPBasicClient
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void ClickConsultButton(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ClickSaveButton(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

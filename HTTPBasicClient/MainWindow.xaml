@@ -5,8 +5,54 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HTTPBasicClient"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="HTTP Client" Height="450" Width="800">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <Label x:Name="urlLabel" Content="URL:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="10" />
+
+        <TextBox x:Name="urlTextBox" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" Margin="10" Width="Auto" />
+
+        <ComboBox x:Name="methodComboBox" SelectedIndex="0" Grid.Row="0" Grid.Column="2" VerticalAlignment="Center" Margin="10" Width="150" Height="25">
+            <ComboBoxItem Content="GET" />
+            <ComboBoxItem Content="HEAD" />
+            <ComboBoxItem Content="OPTIONS" />
+        </ComboBox>
+
+        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="10">
+            <RadioButton x:Name="rawRadioButton" Content="Raw" IsChecked="True" GroupName="responseFormat" Margin="0,0,10,0"/>
+            <RadioButton x:Name="htmlRadioButton" Content="Pretty" GroupName="responseFormat"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" Margin="10">
+            <Button x:Name="consultButton" Content="Consultar" Width="100" Margin="0,0,10,0" Click="ClickConsultButton"/>
+            <Button x:Name="saveButton" IsEnabled="False" Content="Guardar Respuesta" Width="150" Click="ClickSaveButton"/>
+        </StackPanel>
+
+        <TabControl Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="10" VerticalAlignment="Stretch">
+            <TabItem Header="Cuerpo">
+                <TextBox x:Name="responseBodyTextBox" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+            </TabItem>
+            <TabItem Header="Cabeceras">
+                <TextBox x:Name="responseHeadersTextBox" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+            </TabItem>
+        </TabControl>
+
+        <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Left" Margin="10">
+            <Label x:Name="statusCodeLabel" Content="Respuesta HTTP:" Margin="0,0,20,0"/>
+            <Label x:Name="mimeTypeLabel" Content="Tipo de contenido:"/>
+        </StackPanel>
     </Grid>
 </Window>
