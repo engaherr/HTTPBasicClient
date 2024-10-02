@@ -24,19 +24,25 @@ namespace HTTPBasicClient
             InitializeComponent();
         }
 
-        private void ClickConsultButton(object sender, RoutedEventArgs e)
+        private async void ClickConsultButton(object sender, RoutedEventArgs e)
         {
             string url = urlTextBox.Text;
 
             if (string.IsNullOrEmpty(url))
-                MessageBox.Show("Error", "Debes ingresar el URL a consultar");
+                MessageBox.Show("Por favor, ingrese una URL", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             else
             {
-                SendRequest(url);
+                if (!url.StartsWith("http://") && !url.StartsWith("https://"))
+                    url = "https://" + url;
+
+                urlTextBox.Text = url;
+                statusCodeLabel.Content = "Procesando petición...";
+                statusCodeLabel.BorderBrush = Brushes.Blue;
+                await SendRequestAsync(url);
             }
         }
 
-        private void SendRequest(string url)
+        private async Task SendRequestAsync(string url)
         {
             HttpResponseMessage response = new();
 
@@ -45,31 +51,53 @@ namespace HTTPBasicClient
                 switch (methodComboBox.Text)
                 {
                     case "GET":
-                        response = _client.GetAsync(url).Result;
+                        response = await _client.GetAsync(url);
                         break;
                     case "HEAD":
-                        response = _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url)).Result;
+                        response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
                         break;
                     case "OPTIONS":
-                        response = _client.SendAsync(new HttpRequestMessage(HttpMethod.Options, url)).Result;
+                        response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Options, url));
                         break;
                 }
 
                 if (response != null)
                 {
                     statusCodeLabel.Content = $"Respuesta HTTP: {(int)response.StatusCode} - {response.StatusCode}";
-                    mimeTypeLabel.Content = response.Content.Headers.ContentType != null ? 
-                        $"Tipo de contenido: {response.Content.Headers.ContentType.MediaType}" : "Tipo de contenido: Desconocido";
+                    mimeTypeLabel.Content = response.Content.Headers.ContentType != null
+                        ? $"Tipo de contenido: {response.Content.Headers.ContentType.MediaType}"
+                        : "Tipo de contenido: Desconocido";
 
-                    string responseBody = response.Content.ReadAsStringAsync().Result;
+                    string responseBody = await response.Content.ReadAsStringAsync();
                     string responseHeaders = response.Headers.ToString();
+                    string responseContentHeaders = response.Content.Headers.ToString();
 
                     responseBodyTextBox.Text = responseBody;
-                    responseHeadersTextBox.Text = responseHeaders;
+                    responseHeadersTextBox.Text = "***** Generales y de Respuesta *****\n\n" + responseHeaders 
+                        + "\n***** De entidad: *****\n\n" + responseContentHeaders;
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        statusCodeLabel.BorderBrush = Brushes.LightGreen;
+                        saveButton.IsEnabled = true;
+                    }
+                    else if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 600)
+                    {
+                        statusCodeLabel.BorderBrush = Brushes.Salmon;
+                        saveButton.IsEnabled = false;
+                    }
+                    else
+                    {
+                        statusCodeLabel.BorderBrush = Brushes.LightYellow;
+                        saveButton.IsEnabled = false;
+                    }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                statusCodeLabel.Content = "Error en la petición";
+                statusCodeLabel.BorderBrush = Brushes.Red;
+                MessageBox.Show($"Ocurrió un error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
