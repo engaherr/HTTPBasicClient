@@ -21,8 +21,8 @@ namespace HTTPBasicClient
     public partial class MainWindow : Window
     {
         private readonly HttpClient _client = new();
-        private HttpResponseMessage response = new();
-        string responseBody = string.Empty;
+        private HttpResponseMessage _response = new();
+        string _responseBody = string.Empty;
 
         public MainWindow()
         {
@@ -49,41 +49,72 @@ namespace HTTPBasicClient
 
         private async Task SendRequestAsync(string url)
         {
-
             switch (methodComboBox.Text)
             {
                 case "GET":
-                    response = await _client.GetAsync(url);
+                    _response = await _client.GetAsync(url);
                     break;
                 case "HEAD":
-                    response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                    _response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
                     break;
                 case "OPTIONS":
-                    response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Options, url));
+                    _response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Options, url));
                     break;
             }
 
-            if (response != null)
+            if (_response != null)
             {
-                statusCodeLabel.Content = $"Respuesta HTTP: {(int)response.StatusCode} - {response.StatusCode}";
-                mimeTypeLabel.Content = response.Content.Headers.ContentType != null
-                    ? $"Tipo de contenido: {response.Content.Headers.ContentType.MediaType} (." + MimeTypesMap.GetExtension(response.Content.Headers.ContentType.MediaType) + ")"
+                statusCodeLabel.Content = $"Respuesta HTTP: {(int)_response.StatusCode} - {_response.StatusCode}";
+
+                string mimeType = _response.Content.Headers.ContentType != null
+                    ? _response.Content.Headers.ContentType.MediaType
+                    : "Desconocido";
+
+                mimeTypeLabel.Content = _response.Content.Headers.ContentType != null
+                    ? $"Tipo de contenido: {mimeType} ({MimeTypesMap.GetExtension(mimeType)})"
                     : "Tipo de contenido: Desconocido";
 
-                responseBody = await response.Content.ReadAsStringAsync();
-                string responseHeaders = response.Headers.ToString();
-                string responseContentHeaders = response.Content.Headers.ToString();
+                _responseBody = await _response.Content.ReadAsStringAsync();
+                string responseHeaders = _response.Headers.ToString();
+                string responseContentHeaders = _response.Content.Headers.ToString();
 
-                responseBodyTextBox.Text = responseBody;
+                if (mimeType.StartsWith("image"))
+                {
+                    responseWebBrowser.Navigate(url); 
+                    responseWebBrowser.Visibility = Visibility.Visible;
+                    responseBodyTextBox.Visibility = Visibility.Collapsed;
+                }
+                else if (mimeType == "text/html")
+                {
+                    if (htmlRadioButton.IsChecked == true)
+                    {
+                        responseWebBrowser.Navigate(url);
+                        responseWebBrowser.Visibility = Visibility.Visible;
+                        responseBodyTextBox.Visibility = Visibility.Collapsed;
+                    }
+                    else
+                    {
+                        responseBodyTextBox.Text = _responseBody;
+                        responseWebBrowser.Visibility = Visibility.Collapsed;
+                        responseBodyTextBox.Visibility = Visibility.Visible;
+                    }
+                }
+                else
+                {
+                    responseBodyTextBox.Text = _responseBody;
+                    responseWebBrowser.Visibility = Visibility.Collapsed;
+                    responseBodyTextBox.Visibility = Visibility.Visible;
+                }
+
                 responseHeadersTextBox.Text = "***** Generales y de Respuesta *****\n\n" + responseHeaders
                     + "\n***** De entidad: *****\n\n" + responseContentHeaders;
 
-                if (response.IsSuccessStatusCode)
+                if (_response.IsSuccessStatusCode)
                 {
                     statusCodeLabel.BorderBrush = Brushes.LightGreen;
                     saveButton.IsEnabled = true;
                 }
-                else if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 600)
+                else if ((int)_response.StatusCode >= 400 && (int)_response.StatusCode < 600)
                 {
                     statusCodeLabel.BorderBrush = Brushes.Salmon;
                     saveButton.IsEnabled = false;
@@ -96,9 +127,10 @@ namespace HTTPBasicClient
             }
         }
 
+
         private void ClickSaveButton(object sender, RoutedEventArgs e)
         {
-            string mimeType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+            string mimeType = _response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
 
             string extension = MimeTypesMap.GetExtension(mimeType);
 
@@ -112,11 +144,11 @@ namespace HTTPBasicClient
             {
                 if (mimeType.StartsWith("text"))
                 {
-                    File.WriteAllText(saveFileDialog.FileName, responseBody);
+                    File.WriteAllText(saveFileDialog.FileName, _responseBody);
                 }
                 else
                 {
-                    byte[] responseBytes = response.Content.ReadAsByteArrayAsync().Result;
+                    byte[] responseBytes = _response.Content.ReadAsByteArrayAsync().Result;
                     File.WriteAllBytes(saveFileDialog.FileName, responseBytes);
                 }
 

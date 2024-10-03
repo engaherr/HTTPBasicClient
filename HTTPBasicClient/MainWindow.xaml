@@ -43,10 +43,13 @@
 
         <TabControl Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Margin="10" VerticalAlignment="Stretch">
             <TabItem Header="Cuerpo">
-                <TextBox x:Name="responseBodyTextBox" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+                <Grid>
+                    <TextBox x:Name="responseBodyTextBox" IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+                    <WebBrowser x:Name="responseWebBrowser" Visibility="Collapsed"/>
+                </Grid>
             </TabItem>
             <TabItem Header="Cabeceras">
-                <TextBox x:Name="responseHeadersTextBox" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
+                <TextBox x:Name="responseHeadersTextBox" IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
             </TabItem>
         </TabControl>
 
