@@ -67,7 +67,7 @@ namespace HTTPBasicClient
             {
                 statusCodeLabel.Content = $"Respuesta HTTP: {(int)response.StatusCode} - {response.StatusCode}";
                 mimeTypeLabel.Content = response.Content.Headers.ContentType != null
-                    ? $"Tipo de contenido: {response.Content.Headers.ContentType.MediaType} (" + MimeTypesMap.GetExtension(response.Content.Headers.ContentType.MediaType) + ")"
+                    ? $"Tipo de contenido: {response.Content.Headers.ContentType.MediaType} (." + MimeTypesMap.GetExtension(response.Content.Headers.ContentType.MediaType) + ")"
                     : "Tipo de contenido: Desconocido";
 
                 responseBody = await response.Content.ReadAsStringAsync();
