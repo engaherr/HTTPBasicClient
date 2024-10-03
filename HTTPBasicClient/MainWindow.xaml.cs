@@ -1,4 +1,5 @@
-﻿using System.Net.Http;
+﻿using System.IO;
+using System.Net.Http;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,6 +10,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using HeyRed.Mime;
+using Microsoft.Win32;
 
 namespace HTTPBasicClient
 {
@@ -17,7 +20,9 @@ namespace HTTPBasicClient
     /// </summary>
     public partial class MainWindow : Window
     {
-        HttpClient _client = new();
+        private readonly HttpClient _client = new();
+        private HttpResponseMessage response = new();
+        string responseBody = string.Empty;
 
         public MainWindow()
         {
@@ -44,66 +49,79 @@ namespace HTTPBasicClient
 
         private async Task SendRequestAsync(string url)
         {
-            HttpResponseMessage response = new();
 
-            try
+            switch (methodComboBox.Text)
             {
-                switch (methodComboBox.Text)
-                {
-                    case "GET":
-                        response = await _client.GetAsync(url);
-                        break;
-                    case "HEAD":
-                        response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
-                        break;
-                    case "OPTIONS":
-                        response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Options, url));
-                        break;
-                }
-
-                if (response != null)
-                {
-                    statusCodeLabel.Content = $"Respuesta HTTP: {(int)response.StatusCode} - {response.StatusCode}";
-                    mimeTypeLabel.Content = response.Content.Headers.ContentType != null
-                        ? $"Tipo de contenido: {response.Content.Headers.ContentType.MediaType}"
-                        : "Tipo de contenido: Desconocido";
-
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    string responseHeaders = response.Headers.ToString();
-                    string responseContentHeaders = response.Content.Headers.ToString();
-
-                    responseBodyTextBox.Text = responseBody;
-                    responseHeadersTextBox.Text = "***** Generales y de Respuesta *****\n\n" + responseHeaders 
-                        + "\n***** De entidad: *****\n\n" + responseContentHeaders;
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        statusCodeLabel.BorderBrush = Brushes.LightGreen;
-                        saveButton.IsEnabled = true;
-                    }
-                    else if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 600)
-                    {
-                        statusCodeLabel.BorderBrush = Brushes.Salmon;
-                        saveButton.IsEnabled = false;
-                    }
-                    else
-                    {
-                        statusCodeLabel.BorderBrush = Brushes.LightYellow;
-                        saveButton.IsEnabled = false;
-                    }
-                }
+                case "GET":
+                    response = await _client.GetAsync(url);
+                    break;
+                case "HEAD":
+                    response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Head, url));
+                    break;
+                case "OPTIONS":
+                    response = await _client.SendAsync(new HttpRequestMessage(HttpMethod.Options, url));
+                    break;
             }
-            catch (Exception ex)
+
+            if (response != null)
             {
-                statusCodeLabel.Content = "Error en la petición";
-                statusCodeLabel.BorderBrush = Brushes.Red;
-                MessageBox.Show($"Ocurrió un error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                statusCodeLabel.Content = $"Respuesta HTTP: {(int)response.StatusCode} - {response.StatusCode}";
+                mimeTypeLabel.Content = response.Content.Headers.ContentType != null
+                    ? $"Tipo de contenido: {response.Content.Headers.ContentType.MediaType} (" + MimeTypesMap.GetExtension(response.Content.Headers.ContentType.MediaType) + ")"
+                    : "Tipo de contenido: Desconocido";
+
+                responseBody = await response.Content.ReadAsStringAsync();
+                string responseHeaders = response.Headers.ToString();
+                string responseContentHeaders = response.Content.Headers.ToString();
+
+                responseBodyTextBox.Text = responseBody;
+                responseHeadersTextBox.Text = "***** Generales y de Respuesta *****\n\n" + responseHeaders
+                    + "\n***** De entidad: *****\n\n" + responseContentHeaders;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    statusCodeLabel.BorderBrush = Brushes.LightGreen;
+                    saveButton.IsEnabled = true;
+                }
+                else if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 600)
+                {
+                    statusCodeLabel.BorderBrush = Brushes.Salmon;
+                    saveButton.IsEnabled = false;
+                }
+                else
+                {
+                    statusCodeLabel.BorderBrush = Brushes.LightYellow;
+                    saveButton.IsEnabled = false;
+                }
             }
         }
 
         private void ClickSaveButton(object sender, RoutedEventArgs e)
         {
+            string mimeType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
 
+            string extension = MimeTypesMap.GetExtension(mimeType);
+
+            SaveFileDialog saveFileDialog = new()
+            {
+                FileName = $"respuesta.{extension}",
+                Filter = $"{mimeType} Files|*.{extension}|All Files|*.*"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                if (mimeType.StartsWith("text"))
+                {
+                    File.WriteAllText(saveFileDialog.FileName, responseBody);
+                }
+                else
+                {
+                    byte[] responseBytes = response.Content.ReadAsByteArrayAsync().Result;
+                    File.WriteAllBytes(saveFileDialog.FileName, responseBytes);
+                }
+
+                MessageBox.Show("Respuesta guardada exitosamente.", "Guardar", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
     }
 }
